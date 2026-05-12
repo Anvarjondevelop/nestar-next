@@ -7,6 +7,8 @@ import { onError } from '@apollo/client/link/error';
 import { getJwtToken } from '../libs/auth';
 import { TokenRefreshLink } from 'apollo-link-token-refresh';
 let apolloClient: ApolloClient<NormalizedCacheObject>;
+const GRAPHQL_URI = process.env.REACT_APP_API_GRAPHQL_URL || 'http://localhost:3007/graphql';
+const GRAPHQL_WS_URI = process.env.REACT_APP_API_WS || 'ws://127.0.0.1:3007';
 
 function getHeaders() {
 	const headers = {} as HeadersInit;
@@ -42,12 +44,12 @@ function createIsomorphicLink() {
 
 		// @ts-ignore
 		const link = new createUploadLink({
-			uri: process.env.REACT_APP_API_GRAPHQL_URL,
+			uri: GRAPHQL_URI,
 		});
 
 		/* WEBSOCKET SUBSCRIPTION LINK */
 		const wsLink = new WebSocketLink({
-			uri: process.env.REACT_APP_API_WS ?? 'ws://127.0.0.1:3007',
+			uri: GRAPHQL_WS_URI,
 			options: {
 				reconnect: false,
 				timeout: 30000,
