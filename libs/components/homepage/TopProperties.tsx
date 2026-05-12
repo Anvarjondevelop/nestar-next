@@ -17,6 +17,7 @@ import { T } from '../../types/common';
 
 interface TopPropertiesProps {
 	initialInput: PropertiesInquiry;
+	likePropertyHandler: any;
 }
 
 const TopProperties = (props: TopPropertiesProps) => {
