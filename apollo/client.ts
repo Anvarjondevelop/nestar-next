@@ -30,23 +30,35 @@ const tokenRefreshLink = new TokenRefreshLink({
 });
 
 function createIsomorphicLink() {
-	if (typeof window !== 'undefined') {
-		const authLink = new ApolloLink((operation, forward) => {
-			operation.setContext(({ headers = {} }) => ({
-				headers: {
-					...headers,
-					...getHeaders(),
-				},
-			}));
-			console.warn('requesting.. ', operation);
-			return forward(operation);
-		});
+	const authLink = new ApolloLink((operation, forward) => {
+		operation.setContext(({ headers = {} }) => ({
+			headers: {
+				...headers,
+				...getHeaders(),
+			},
+		}));
+		console.warn('requesting.. ', operation);
+		return forward(operation);
+	});
 
+	// @ts-ignore
+	const link = new createUploadLink({
+		uri: GRAPHQL_URI,
+	});
+
+	const errorLink = onError(({ graphQLErrors, networkError, response }) => {
+		if (graphQLErrors) {
+			graphQLErrors.map(({ message, locations, path, extensions }) =>
+				console.log(`[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`),
+			);
+		}
+		if (networkError) console.log(`[Network error]: ${networkError}`);
 		// @ts-ignore
-		const link = new createUploadLink({
-			uri: GRAPHQL_URI,
-		});
+		if (networkError?.statusCode === 401) {
+		}
+	});
 
+	if (typeof window !== 'undefined') {
 		/* WEBSOCKET SUBSCRIPTION LINK */
 		const wsLink = new WebSocketLink({
 			uri: GRAPHQL_WS_URI,
@@ -57,18 +69,6 @@ function createIsomorphicLink() {
 					return { headers: getHeaders() };
 				},
 			},
-		});
-
-		const errorLink = onError(({ graphQLErrors, networkError, response }) => {
-			if (graphQLErrors) {
-				graphQLErrors.map(({ message, locations, path, extensions }) =>
-					console.log(`[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`),
-				);
-			}
-			if (networkError) console.log(`[Network error]: ${networkError}`);
-			// @ts-ignore
-			if (networkError?.statusCode === 401) {
-			}
 		});
 
 		const splitLink = split(
@@ -82,6 +82,8 @@ function createIsomorphicLink() {
 
 		return from([errorLink, tokenRefreshLink, splitLink]);
 	}
+
+	return from([errorLink, tokenRefreshLink, authLink.concat(link)]);
 }
 
 function createApolloClient() {
