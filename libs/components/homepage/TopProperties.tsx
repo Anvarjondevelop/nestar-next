@@ -8,8 +8,11 @@ import { Autoplay, Navigation, Pagination } from 'swiper';
 import TopPropertyCard from './TopPropertyCard';
 import { PropertiesInquiry } from '../../types/property/property.input';
 import { Property } from '../../types/property/property';
+import { useMutation, useQuery } from '@apollo/client';
 import { GET_PROPERTIES } from '../../../apollo/user/query';
-import { useQuery } from '@apollo/client';
+import { LIKE_TARGET_PROPERTY } from '../../../apollo/user/mutation';
+import { Message } from '../../enums/common.enum';
+import { sweetMixinErrorAlert, sweetTopSmallSuccessAlert } from '../../sweetAlert';
 import { T } from '../../types/common';
 
 interface TopPropertiesProps {
@@ -22,20 +25,41 @@ const TopProperties = (props: TopPropertiesProps) => {
 	const [topProperties, setTopProperties] = useState<Property[]>([]);
 
 	/** APOLLO REQUESTS **/
+	const [likeTargetProperty] = useMutation(LIKE_TARGET_PROPERTY);
 	const {
-		loading: getPropertiesLoading,
 		data: getPropertiesData,
+		loading: getPropertiesLoading,
 		error: getPropertiesError,
 		refetch: getPropertiesRefetch,
 	} = useQuery(GET_PROPERTIES, {
 		fetchPolicy: 'cache-and-network',
 		variables: { input: initialInput },
 		notifyOnNetworkStatusChange: true,
-		onCompleted: (data: T) => {
+		onCompleted: (data) => {
 			setTopProperties(data?.getProperties?.list);
+		},
+		onError: (error) => {
+			console.log(error);
 		},
 	});
 	/** HANDLERS **/
+	const likePropertyHandler = async (user: T, propertyId: string) => {
+		try {
+			console.log('user: ++++ ', user);
+			console.log('propertyId: ++++ ', propertyId);
+			if (!propertyId) return;
+			if (!user?._id) throw new Error(Message.NOT_AUTHENTICATED);
+
+			const result = await likeTargetProperty({ variables: { input: propertyId } });
+			console.log('result: ++++ ', result);
+
+			await getPropertiesRefetch({ input: initialInput });
+			sweetTopSmallSuccessAlert('Successfully liked property', 800);
+		} catch (error: any) {
+			console.log('error: ++++ ', error.message);
+			sweetMixinErrorAlert(error.message);
+		}
+	};
 
 	if (device === 'mobile') {
 		return (
@@ -55,7 +79,7 @@ const TopProperties = (props: TopPropertiesProps) => {
 							{topProperties.map((property: Property) => {
 								return (
 									<SwiperSlide className={'top-property-slide'} key={property?._id}>
-										<TopPropertyCard property={property} />
+										<TopPropertyCard property={property} likePropertyHandler={likePropertyHandler} />
 									</SwiperSlide>
 								);
 							})}
@@ -98,7 +122,7 @@ const TopProperties = (props: TopPropertiesProps) => {
 							{topProperties.map((property: Property) => {
 								return (
 									<SwiperSlide className={'top-property-slide'} key={property?._id}>
-										<TopPropertyCard property={property} />
+										<TopPropertyCard property={property} likePropertyHandler={likePropertyHandler} />
 									</SwiperSlide>
 								);
 							})}

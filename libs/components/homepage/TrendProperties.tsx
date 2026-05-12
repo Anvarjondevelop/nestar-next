@@ -8,9 +8,12 @@ import { Autoplay, Navigation, Pagination } from 'swiper';
 import { Property } from '../../types/property/property';
 import { PropertiesInquiry } from '../../types/property/property.input';
 import TrendPropertyCard from './TrendPropertyCard';
+import { useMutation, useQuery } from '@apollo/client';
 import { GET_PROPERTIES } from '../../../apollo/user/query';
+import { LIKE_TARGET_PROPERTY } from '../../../apollo/user/mutation';
+import { sweetMixinErrorAlert, sweetTopSmallSuccessAlert } from '../../sweetAlert';
 import { T } from '../../types/common';
-import { useQuery } from '@apollo/client';
+import { Message } from '../../enums/common.enum';
 
 interface TrendPropertiesProps {
 	initialInput: PropertiesInquiry;
@@ -22,22 +25,45 @@ const TrendProperties = (props: TrendPropertiesProps) => {
 	const [trendProperties, setTrendProperties] = useState<Property[]>([]);
 
 	/** APOLLO REQUESTS **/
+	const [likeTargetProperty] = useMutation(LIKE_TARGET_PROPERTY);
+
 	const {
-		loading: getPropertiesLoading,
 		data: getPropertiesData,
+		loading: getPropertiesLoading,
 		error: getPropertiesError,
 		refetch: getPropertiesRefetch,
 	} = useQuery(GET_PROPERTIES, {
 		fetchPolicy: 'cache-and-network',
 		variables: { input: initialInput },
 		notifyOnNetworkStatusChange: true,
-		onCompleted: (data: T) => {
+		onCompleted: (data) => {
 			setTrendProperties(data?.getProperties?.list);
+		},
+		onError: (error) => {
+			console.log(error);
 		},
 	});
 	/** HANDLERS **/
 
-	if (trendProperties) console.log('trendProperties:', trendProperties);
+	const likePropertyHandler = async (user: T, propertyId: string) => {
+		try {
+			console.log('user: ++++ ', user);
+			console.log('propertyId: ++++ ', propertyId);
+			if (!propertyId) return;
+			if (!user?._id) throw new Error(Message.NOT_AUTHENTICATED);
+
+			const result = await likeTargetProperty({ variables: { input: propertyId } });
+			console.log('result: ++++ ', result);
+
+			await getPropertiesRefetch({ input: initialInput });
+			sweetTopSmallSuccessAlert('Successfully liked property', 800);
+		} catch (error: any) {
+			console.log('error: ++++ ', error.message);
+			sweetMixinErrorAlert(error.message);
+		}
+	};
+
+	if (trendProperties) console.log('trendProperties: ++++ ', trendProperties);
 	if (!trendProperties) return null;
 
 	if (device === 'mobile') {
@@ -63,7 +89,7 @@ const TrendProperties = (props: TrendPropertiesProps) => {
 								{trendProperties.map((property: Property) => {
 									return (
 										<SwiperSlide key={property._id} className={'trend-property-slide'}>
-											<TrendPropertyCard property={property} />
+											<TrendPropertyCard property={property} likePropertyHandler={likePropertyHandler} />
 										</SwiperSlide>
 									);
 								})}
@@ -112,7 +138,7 @@ const TrendProperties = (props: TrendPropertiesProps) => {
 								{trendProperties.map((property: Property) => {
 									return (
 										<SwiperSlide key={property._id} className={'trend-property-slide'}>
-											<TrendPropertyCard property={property} />
+											<TrendPropertyCard property={property} likePropertyHandler={likePropertyHandler} />
 										</SwiperSlide>
 									);
 								})}
@@ -136,3 +162,6 @@ TrendProperties.defaultProps = {
 };
 
 export default TrendProperties;
+function sweetTopSmallErrorAlert(arg0: string, arg1: number) {
+	throw new Error('Function not implemented.');
+}
