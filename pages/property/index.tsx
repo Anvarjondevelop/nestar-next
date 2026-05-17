@@ -46,7 +46,7 @@ const PropertyList: NextPage = ({ initialInput, ...props }: any) => {
 		refetch: getPropertiesRefetch,
 	} = useQuery(GET_PROPERTIES, {
 		fetchPolicy: 'network-only',
-		variables: { input: initialInput },
+		variables: { input: searchFilter },
 		notifyOnNetworkStatusChange: true,
 		onCompleted: (data: T) => {
 			setProperties(data?.getProperties?.list);
@@ -62,13 +62,13 @@ const PropertyList: NextPage = ({ initialInput, ...props }: any) => {
 		if (router.query.input) {
 			const inputObj = JSON.parse(router?.query?.input as string);
 			setSearchFilter(inputObj);
+			setCurrentPage(inputObj.page === undefined ? 1 : inputObj.page);
 		}
-
-		setCurrentPage(searchFilter.page === undefined ? 1 : searchFilter.page);
-	}, [router]);
+	}, [router.query.input]);
 
 	useEffect(() => {
 		console.log('searchFilter', searchFilter);
+		setCurrentPage(searchFilter.page === undefined ? 1 : searchFilter.page);
 	}, [searchFilter]);
 
 	/** HANDLERS **/
@@ -82,7 +82,7 @@ const PropertyList: NextPage = ({ initialInput, ...props }: any) => {
 			const result = await likeTargetProperty({ variables: { input: propertyId } });
 			console.log('result: ++++ ', result);
 
-			await getPropertiesRefetch({ input: initialInput });
+			await getPropertiesRefetch({ input: searchFilter });
 			sweetTopSmallSuccessAlert('Successfully liked property', 800);
 		} catch (error: any) {
 			console.log('error: ++++ ', error.message);
@@ -91,10 +91,11 @@ const PropertyList: NextPage = ({ initialInput, ...props }: any) => {
 	};
 
 	const handlePaginationChange = async (event: ChangeEvent<unknown>, value: number) => {
-		searchFilter.page = value;
+		const updatedFilter = { ...searchFilter, page: value };
+		setSearchFilter(updatedFilter);
 		await router.push(
-			`/property?input=${JSON.stringify(searchFilter)}`,
-			`/property?input=${JSON.stringify(searchFilter)}`,
+			`/property?input=${JSON.stringify(updatedFilter)}`,
+			`/property?input=${JSON.stringify(updatedFilter)}`,
 			{
 				scroll: false,
 			},

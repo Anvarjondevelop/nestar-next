@@ -22,9 +22,9 @@ interface PISearch {
 	memberId?: string;
 	locationList?: PropertyLocation[];
 	typeList?: PropertyType[];
-	roomsList?: Number[];
+	roomsList?: number[];
 	options?: string[];
-	bedsList?: Number[];
+	bedsList?: number[];
 	pricesRange?: Range;
 	periodsRange?: PeriodsRange;
 	squaresRange?: Range;

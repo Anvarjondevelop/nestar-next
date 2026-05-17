@@ -166,7 +166,7 @@ const HeaderFilter = (props: HeaderFilterProps) => {
 	);
 
 	const propertyBedSelectHandler = useCallback(
-		async (number: Number) => {
+		async (number: number) => {
 			try {
 				if (number != 0) {
 					if (searchFilter?.search?.bedsList?.includes(number)) {
@@ -174,7 +174,7 @@ const HeaderFilter = (props: HeaderFilterProps) => {
 							...searchFilter,
 							search: {
 								...searchFilter.search,
-								bedsList: searchFilter?.search?.bedsList?.filter((item: Number) => item !== number),
+								bedsList: searchFilter?.search?.bedsList?.filter((item: number) => item !== number),
 							},
 						});
 					} else {
