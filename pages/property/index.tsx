@@ -10,10 +10,12 @@ import { PropertiesInquiry } from '../../libs/types/property/property.input';
 import { Property } from '../../libs/types/property/property';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
-import { Direction } from '../../libs/enums/common.enum';
-import { useQuery } from '@apollo/client';
+import { Direction, Message } from '../../libs/enums/common.enum';
+import { useMutation, useQuery } from '@apollo/client';
 import { GET_PROPERTIES } from '../../apollo/user/query';
 import { T } from '../../libs/types/common';
+import { LIKE_TARGET_PROPERTY } from '../../apollo/user/mutation';
+import { sweetMixinErrorAlert, sweetTopSmallSuccessAlert } from '../../libs/sweetAlert';
 
 export const getStaticProps = async ({ locale }: any) => ({
 	props: {
@@ -35,6 +37,8 @@ const PropertyList: NextPage = ({ initialInput, ...props }: any) => {
 	const [filterSortName, setFilterSortName] = useState('New');
 
 	/** APOLLO REQUESTS **/
+	const [likeTargetProperty] = useMutation(LIKE_TARGET_PROPERTY);
+
 	const {
 		data: getPropertiesData,
 		loading: getPropertiesLoading,
@@ -68,6 +72,24 @@ const PropertyList: NextPage = ({ initialInput, ...props }: any) => {
 	}, [searchFilter]);
 
 	/** HANDLERS **/
+	const likePropertyHandler = async (user: T, propertyId: string) => {
+		try {
+			console.log('user: ++++ ', user);
+			console.log('propertyId: ++++ ', propertyId);
+			if (!propertyId) return;
+			if (!user?._id) throw new Error(Message.NOT_AUTHENTICATED);
+
+			const result = await likeTargetProperty({ variables: { input: propertyId } });
+			console.log('result: ++++ ', result);
+
+			await getPropertiesRefetch({ input: initialInput });
+			sweetTopSmallSuccessAlert('Successfully liked property', 800);
+		} catch (error: any) {
+			console.log('error: ++++ ', error.message);
+			sweetMixinErrorAlert(error.message);
+		}
+	};
+
 	const handlePaginationChange = async (event: ChangeEvent<unknown>, value: number) => {
 		searchFilter.page = value;
 		await router.push(
@@ -162,7 +184,9 @@ const PropertyList: NextPage = ({ initialInput, ...props }: any) => {
 									</div>
 								) : (
 									properties.map((property: Property) => {
-										return <PropertyCard property={property} key={property?._id} />;
+										return (
+											<PropertyCard property={property} likePropertyHandler={likePropertyHandler} key={property?._id} />
+										);
 									})
 								)}
 							</Stack>
