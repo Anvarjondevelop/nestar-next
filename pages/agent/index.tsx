@@ -36,6 +36,11 @@ const AgentList: NextPage = ({ initialInput, ...props }: any) => {
 	const [total, setTotal] = useState<number>(0);
 	const [currentPage, setCurrentPage] = useState<number>(1);
 	const [searchText, setSearchText] = useState<string>('');
+	const agentQueryInput = {
+		...searchFilter,
+		page: Number(searchFilter.page),
+		limit: Number(searchFilter.limit),
+	};
 
 	/** APOLLO REQUESTS **/
 	const [likeTargetMember] = useMutation(LIKE_TARGET_MEMBER);
@@ -47,11 +52,14 @@ const AgentList: NextPage = ({ initialInput, ...props }: any) => {
 		refetch: getAgentsRefetch,
 	} = useQuery(GET_AGENTS, {
 		fetchPolicy: 'network-only',
-		variables: { input: searchFilter },
+		variables: { input: agentQueryInput },
 		notifyOnNetworkStatusChange: true,
 		onCompleted: (data: T) => {
 			setAgents(data?.getAgents?.list);
 			setTotal(data?.getAgents?.metaCounter[0]?.total);
+		},
+		onError: (error) => {
+			console.log('ERROR, getAgents:', error);
 		},
 	});
 
@@ -60,11 +68,14 @@ const AgentList: NextPage = ({ initialInput, ...props }: any) => {
 		if (router.query.input) {
 			const input_obj = JSON.parse(router?.query?.input as string);
 			setSearchFilter(input_obj);
+			setCurrentPage(input_obj.page === undefined ? 1 : input_obj.page);
 		} else
 			router.replace(`/agent?input=${JSON.stringify(searchFilter)}`, `/agent?input=${JSON.stringify(searchFilter)}`);
+	}, [router.query.input]);
 
+	useEffect(() => {
 		setCurrentPage(searchFilter.page === undefined ? 1 : searchFilter.page);
-	}, [router]);
+	}, [searchFilter]);
 
 	/** HANDLERS **/
 	const sortingClickHandler = (e: MouseEvent<HTMLElement>) => {
@@ -101,8 +112,9 @@ const AgentList: NextPage = ({ initialInput, ...props }: any) => {
 	};
 
 	const paginationChangeHandler = async (event: ChangeEvent<unknown>, value: number) => {
-		searchFilter.page = value;
-		await router.push(`/agent?input=${JSON.stringify(searchFilter)}`, `/agent?input=${JSON.stringify(searchFilter)}`, {
+		const updatedFilter = { ...searchFilter, page: value };
+		setSearchFilter(updatedFilter);
+		await router.push(`/agent?input=${JSON.stringify(updatedFilter)}`, `/agent?input=${JSON.stringify(updatedFilter)}`, {
 			scroll: false,
 		});
 		setCurrentPage(value);
@@ -119,7 +131,7 @@ const AgentList: NextPage = ({ initialInput, ...props }: any) => {
 				},
 			});
 
-			await getAgentsRefetch({ input: searchFilter });
+			await getAgentsRefetch({ input: agentQueryInput });
 			await sweetTopSmallSuccessAlert('success', 800);
 		} catch (err: any) {
 			console.log('ERROR, likePropertyHandler:', err.message);
@@ -187,11 +199,11 @@ const AgentList: NextPage = ({ initialInput, ...props }: any) => {
 					</Stack>
 					<Stack className={'pagination'}>
 						<Stack className="pagination-box">
-							{agents.length !== 0 && Math.ceil(total / searchFilter.limit) > 1 && (
+							{agents.length !== 0 && Math.ceil(total / Number(searchFilter.limit)) > 1 && (
 								<Stack className="pagination-box">
 									<Pagination
 										page={currentPage}
-										count={Math.ceil(total / searchFilter.limit)}
+										count={Math.ceil(total / Number(searchFilter.limit))}
 										onChange={paginationChangeHandler}
 										shape="circular"
 										color="primary"

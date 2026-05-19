@@ -21,6 +21,11 @@ const TopAgents = (props: TopAgentsProps) => {
 	const device = useDeviceDetect();
 	const router = useRouter();
 	const [topAgents, setTopAgents] = useState<Member[]>([]);
+	const agentQueryInput = {
+		...initialInput,
+		page: Number(initialInput.page),
+		limit: Number(initialInput.limit),
+	};
 
 	/** APOLLO REQUESTS **/
 	const {
@@ -30,10 +35,13 @@ const TopAgents = (props: TopAgentsProps) => {
 		refetch: getAgentsRefetch,
 	} = useQuery(GET_AGENTS, {
 		fetchPolicy: 'cache-and-network',
-		variables: { input: initialInput },
+		variables: { input: agentQueryInput },
 		notifyOnNetworkStatusChange: true,
 		onCompleted: (data: T) => {
 			setTopAgents(data?.getAgents?.list);
+		},
+		onError: (error) => {
+			console.log('ERROR, getTopAgents:', error);
 		},
 	});
 	/** HANDLERS **/
@@ -126,6 +134,3 @@ TopAgents.defaultProps = {
 };
 
 export default TopAgents;
-function setTopProperties(list: any) {
-	throw new Error('Function not implemented.');
-}

@@ -28,7 +28,6 @@ export const GET_AGENTS = gql`
 				deletedAt
 				createdAt
 				updatedAt
-				accessToken
 				meLiked {
 					memberId
 					likeRefId
@@ -68,7 +67,6 @@ export const GET_MEMBER = gql(`
         deletedAt
         createdAt
         updatedAt
-        accessToken
         meFollowed {
 					followingId
 					followerId

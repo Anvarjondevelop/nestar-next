@@ -19,7 +19,7 @@ import { CommentGroup } from '../../libs/enums/comment.enum';
 import { Messages, REACT_APP_API_URL } from '../../libs/config';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { CREATE_COMMENT, LIKE_TARGET_PROPERTY } from '../../apollo/user/mutation';
-import { GET_COMMENTS, GET_MEMBER } from '../../apollo/user/query';
+import { GET_COMMENTS, GET_MEMBER, GET_PROPERTIES } from '../../apollo/user/query';
 import { T } from '../../libs/types/common';
 
 export const getStaticProps = async ({ locale }: any) => ({
@@ -97,14 +97,30 @@ const AgentDetail: NextPage = ({ initialInput, initialComment, ...props }: any) 
 		},
 	});
 
+	const {
+		loading: getPropertiesLoading,
+		data: getPropertiesData,
+		error: getPropertiesError,
+		refetch: getPropertiesRefetch,
+	} = useQuery(GET_PROPERTIES, {
+		fetchPolicy: 'network-only',
+		variables: { input: searchFilter },
+		skip: !searchFilter.search.memberId,
+		notifyOnNetworkStatusChange: true,
+		onCompleted: (data: T) => {
+			setAgentProperties(data?.getProperties?.list);
+			setPropertyTotal(data?.getProperties?.metaCounter[0]?.total ?? 0);
+		},
+	});
+
 	/** LIFECYCLES **/
 	useEffect(() => {
 		if (router.query.agentId) setAgentId(router.query.agentId as string);
-	}, [router]);
+	}, [router.query.agentId]);
 
 	useEffect(() => {
 		if (searchFilter.search.memberId) {
-			getPropertiesRefetch({ variables: { input: searchFilter } }).then();
+			getPropertiesRefetch({ input: searchFilter }).then();
 		}
 	}, [searchFilter]);
 
@@ -125,13 +141,11 @@ const AgentDetail: NextPage = ({ initialInput, initialComment, ...props }: any) 
 	};
 
 	const propertyPaginationChangeHandler = async (event: ChangeEvent<unknown>, value: number) => {
-		searchFilter.page = value;
-		setSearchFilter({ ...searchFilter });
+		setSearchFilter({ ...searchFilter, page: value });
 	};
 
 	const commentPaginationChangeHandler = async (event: ChangeEvent<unknown>, value: number) => {
-		commentInquiry.page = value;
-		setCommentInquiry({ ...commentInquiry });
+		setCommentInquiry({ ...commentInquiry, page: value });
 	};
 
 	const createCommentHandler = async () => {
@@ -163,7 +177,7 @@ const AgentDetail: NextPage = ({ initialInput, initialComment, ...props }: any) 
 					input: id,
 				},
 			});
-			await getPropertiesRefetch({ variables: { input: searchFilter } });
+			await getPropertiesRefetch({ input: searchFilter });
 			await sweetTopSmallSuccessAlert('success', 800);
 		} catch (err: any) {
 			console.log('ERROR, likePropertyHandler:', err.message);
@@ -315,11 +329,3 @@ AgentDetail.defaultProps = {
 };
 
 export default withLayoutBasic(AgentDetail);
-function getPropertiesRefetch(arg0: { variables: { input: PropertiesInquiry } }): Promise<void> {
-	// Implement the actual logic here
-	return Promise.resolve();
-}
-
-function getCommentsRefetch(arg0: { variables: { input: CommentsInquiry } }) {
-	throw new Error('Function not implemented.');
-}
