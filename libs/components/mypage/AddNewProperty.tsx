@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import { Button, Stack, Typography } from '@mui/material';
 import useDeviceDetect from '../../hooks/useDeviceDetect';
-import { PropertyLocation, PropertyType } from '../../enums/property.enum';
+import { PropertyLocation, PropertyStatus, PropertyType } from '../../enums/property.enum';
 import { REACT_APP_API_URL, propertySquare } from '../../config';
 import { PropertyInput } from '../../types/property/property.input';
 import axios from 'axios';
@@ -20,9 +20,22 @@ const AddProperty = ({ initialValues, ...props }: any) => {
 	const [propertyLocation, setPropertyLocation] = useState<PropertyLocation[]>(Object.values(PropertyLocation));
 	const token = getJwtToken();
 	const user = useReactiveVar(userVar);
+	import { useMutation, useQuery, useReactiveVar } from '@apollo/client';
+	import { CREATE_PROPERTY, UPDATE_PROPERTY } from '../../../apollo/user/mutation';
+	import { GET_PROPERTY } from '../apollo/user/query';
+	import { sweetErrorHandling, sweetMixinErrorAlert, sweetMixinSuccessAlert } from '../../sweetAlert';
 
 	/** APOLLO REQUESTS **/
-	let getPropertyData: any, getPropertyLoading: any;
+	const [createProperty] = useMutation(CREATE_PROPERTY);
+	const [updateProperty] = useMutation(UPDATE_PROPERTY);
+
+	const { loading: getPropertyLoading, data: getPropertyData } = useQuery(GET_PROPERTY, {
+		fetchPolicy: 'network-only',
+		variables: {
+			input: router.query.propertyId,
+		},
+		skip: !router.query.propertyId,
+	});
 
 	/** LIFECYCLES **/
 	useEffect(() => {
@@ -115,9 +128,44 @@ const AddProperty = ({ initialValues, ...props }: any) => {
 		}
 	};
 
-	const insertPropertyHandler = useCallback(async () => {}, [insertPropertyData]);
+	const insertPropertyHandler = useCallback(async () => {
+		try {
+			await createProperty({
+				variables: {
+					input: {
+						...insertPropertyData,
+						propertyStatus: PropertyStatus.ACTIVE,
+					},
+				},
+			});
+			await sweetMixinSuccessAlert('Property created successfully!');
+			await router.push({
+				pathname: '/mypage',
+				query: { category: 'myProperties' },
+			});
+		} catch (err: any) {
+			await sweetErrorHandling(err);
+		}
+	}, [insertPropertyData, createProperty, router]);
 
-	const updatePropertyHandler = useCallback(async () => {}, [insertPropertyData]);
+	const updatePropertyHandler = useCallback(async () => {
+		try {
+			//@ts-ignore
+			insertPropertyData._id = getPropertyData?.getProperty?._id;
+			await updateProperty({
+				variables: {
+					input: insertPropertyData,
+				},
+			});
+			await sweetMixinSuccessAlert('Property updated successfully!');
+			await router.push({
+				pathname: '/mypage',
+				query: { category: 'myProperties' },
+			});
+		} catch (err: any) {
+			await sweetErrorHandling(err);
+		}
+	}, [insertPropertyData, updateProperty, router]);
 
 	if (user?.memberType !== 'AGENT') {
 		router.back();
