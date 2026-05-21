@@ -7,9 +7,11 @@ import { REACT_APP_API_URL, propertySquare } from '../../config';
 import { PropertyInput } from '../../types/property/property.input';
 import axios from 'axios';
 import { getJwtToken } from '../../auth';
-import { sweetMixinErrorAlert } from '../../sweetAlert';
-import { useReactiveVar } from '@apollo/client';
+import { sweetErrorHandling, sweetMixinErrorAlert, sweetMixinSuccessAlert } from '../../sweetAlert';
+import { useMutation, useQuery, useReactiveVar } from '@apollo/client';
 import { userVar } from '../../../apollo/store';
+import { CREATE_PROPERTY, UPDATE_PROPERTY } from '../../../apollo/user/mutation';
+import { GET_PROPERTY } from '../../../apollo/user/query';
 
 const AddProperty = ({ initialValues, ...props }: any) => {
 	const device = useDeviceDetect();
@@ -20,10 +22,6 @@ const AddProperty = ({ initialValues, ...props }: any) => {
 	const [propertyLocation, setPropertyLocation] = useState<PropertyLocation[]>(Object.values(PropertyLocation));
 	const token = getJwtToken();
 	const user = useReactiveVar(userVar);
-	import { useMutation, useQuery, useReactiveVar } from '@apollo/client';
-	import { CREATE_PROPERTY, UPDATE_PROPERTY } from '../../../apollo/user/mutation';
-	import { GET_PROPERTY } from '../apollo/user/query';
-	import { sweetErrorHandling, sweetMixinErrorAlert, sweetMixinSuccessAlert } from '../../sweetAlert';
 
 	/** APOLLO REQUESTS **/
 	const [createProperty] = useMutation(CREATE_PROPERTY);

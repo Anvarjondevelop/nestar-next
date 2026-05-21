@@ -4,10 +4,12 @@ import useDeviceDetect from '../../hooks/useDeviceDetect';
 import { Button, Stack, Typography } from '@mui/material';
 import axios from 'axios';
 import { REACT_APP_API_URL } from '../../config';
-import { getJwtToken } from '../../auth';
-import { useReactiveVar } from '@apollo/client';
+import { getJwtToken, updateStorage, updateUserInfo } from '../../auth';
+import { useMutation, useReactiveVar } from '@apollo/client';
 import { userVar } from '../../../apollo/store';
 import { MemberUpdate } from '../../types/member/member.update';
+import { UPDATE_MEMBER } from '../../../apollo/user/mutation';
+import { sweetErrorHandling, sweetMixinSuccessAlert } from '../../sweetAlert';
 
 const MyProfile: NextPage = ({ initialValues, ...props }: any) => {
 	const device = useDeviceDetect();
@@ -16,6 +18,7 @@ const MyProfile: NextPage = ({ initialValues, ...props }: any) => {
 	const [updateData, setUpdateData] = useState<MemberUpdate>(initialValues);
 
 	/** APOLLO REQUESTS **/
+	const [updateMember] = useMutation(UPDATE_MEMBER);
 
 	/** LIFECYCLES **/
 	useEffect(() => {
@@ -74,7 +77,34 @@ const MyProfile: NextPage = ({ initialValues, ...props }: any) => {
 		}
 	};
 
-	const updatePropertyHandler = useCallback(async () => {}, [updateData]);
+	const updatePropertyHandler = useCallback(async () => {
+		try {
+			if (!user._id) throw new Error('You are not logged in!');
+
+			const result = await updateMember({
+				variables: {
+					input: {
+						_id: user._id,
+						memberNick: updateData.memberNick,
+						memberPhone: updateData.memberPhone,
+						memberAddress: updateData.memberAddress,
+						memberImage: updateData.memberImage,
+					},
+				},
+			});
+
+			const updatedMember = result.data.updateMember;
+			if (updatedMember) {
+				const jwtToken = updatedMember.accessToken;
+				updateStorage({ jwtToken });
+				updateUserInfo(jwtToken);
+				await sweetMixinSuccessAlert('Profile updated successfully!');
+			}
+		} catch (err: any) {
+			console.log('Error, updatePropertyHandler:', err);
+			await sweetErrorHandling(err);
+		}
+	}, [updateData, user._id, updateMember]);
 
 	const doDisabledCheck = () => {
 		if (
