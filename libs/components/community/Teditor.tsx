@@ -7,6 +7,11 @@ import { REACT_APP_API_URL } from '../../config';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import { T } from '../../types/common';
+import { useMutation, useReactiveVar } from '@apollo/client';
+import { userVar } from '../../../apollo/store';
+import { CREATE_BOARD_ARTICLE } from '../../../apollo/user/mutation';
+import { Message } from '../../enums/common.enum';
+import { sweetErrorHandling, sweetMixinSuccessAlert } from '../../sweetAlert';
 import '@toast-ui/editor/dist/toastui-editor.css';
 
 const TuiEditor = () => {
@@ -14,8 +19,10 @@ const TuiEditor = () => {
 		token = getJwtToken(),
 		router = useRouter();
 	const [articleCategory, setArticleCategory] = useState<BoardArticleCategory>(BoardArticleCategory.FREE);
+	const user = useReactiveVar(userVar);
 
 	/** APOLLO REQUESTS **/
+	const [createBoardArticle] = useMutation(CREATE_BOARD_ARTICLE);
 
 	const memoizedValues = useMemo(() => {
 		const articleTitle = '',
@@ -76,7 +83,37 @@ const TuiEditor = () => {
 		memoizedValues.articleTitle = e.target.value;
 	};
 
-	const handleRegisterButton = async () => {};
+	const handleRegisterButton = async () => {
+		try {
+			const content = editorRef.current?.getInstance().getHTML() ?? '';
+			memoizedValues.articleContent = content;
+
+			if (memoizedValues.articleTitle === '' || memoizedValues.articleContent === '') {
+				throw new Error('Please fill all required fields!');
+			}
+			if (!user?._id) throw new Error(Message.NOT_AUTHENTICATED);
+
+			const input = {
+				articleCategory,
+				articleTitle: memoizedValues.articleTitle,
+				articleContent: memoizedValues.articleContent,
+				articleImage: memoizedValues.articleImage,
+			};
+
+			await createBoardArticle({
+				variables: { input },
+			});
+
+			await sweetMixinSuccessAlert('Article created successfully!');
+			await router.push({
+				pathname: '/mypage',
+				query: { category: 'myArticles' },
+			});
+		} catch (err: any) {
+			console.log('Error, handleRegisterButton:', err.message);
+			await sweetErrorHandling(err);
+		}
+	};
 
 	const doDisabledCheck = () => {
 		if (memoizedValues.articleContent === '' || memoizedValues.articleTitle === '') {
