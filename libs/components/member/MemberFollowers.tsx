@@ -50,19 +50,31 @@ const MemberFollowers = (props: MemberFollowsProps) => {
 
 	/** LIFECYCLES **/
 	useEffect(() => {
-		if (router.query.memberId)
-			setFollowInquiry({ ...followInquiry, search: { followingId: router.query.memberId as string } });
-		else setFollowInquiry({ ...followInquiry, search: { followingId: user?._id } });
-	}, [router]);
+		if (router.query.memberId) {
+			setFollowInquiry((prev) => ({
+				...prev,
+				search: { followingId: router.query.memberId as string },
+			}));
+		} else if (user?._id) {
+			setFollowInquiry((prev) => ({
+				...prev,
+				search: { followingId: user?._id },
+			}));
+		}
+	}, [router, user]);
 
 	useEffect(() => {
-		getMemberFollowersRefetch({ input: followInquiry }).then();
+		if (followInquiry?.search?.followingId) {
+			getMemberFollowersRefetch({ input: followInquiry }).then();
+		}
 	}, [followInquiry]);
 
 	/** HANDLERS **/
 	const paginationHandler = async (event: ChangeEvent<unknown>, value: number) => {
-		followInquiry.page = value;
-		setFollowInquiry({ ...followInquiry });
+		setFollowInquiry((prev) => ({
+			...prev,
+			page: value,
+		}));
 	};
 
 	if (device === 'mobile') {

@@ -50,19 +50,31 @@ const MemberFollowings = (props: MemberFollowingsProps) => {
 
 	/** LIFECYCLES **/
 	useEffect(() => {
-		if (router.query.memberId)
-			setFollowInquiry({ ...followInquiry, search: { followerId: router.query.memberId as string } });
-		else setFollowInquiry({ ...followInquiry, search: { followerId: user?._id } });
-	}, [router]);
+		if (router.query.memberId) {
+			setFollowInquiry((prev) => ({
+				...prev,
+				search: { followerId: router.query.memberId as string },
+			}));
+		} else if (user?._id) {
+			setFollowInquiry((prev) => ({
+				...prev,
+				search: { followerId: user?._id },
+			}));
+		}
+	}, [router, user]);
 
 	useEffect(() => {
-		getMemberFollowingsRefetch({ input: followInquiry }).then();
+		if (followInquiry?.search?.followerId) {
+			getMemberFollowingsRefetch({ input: followInquiry }).then();
+		}
 	}, [followInquiry]);
 
 	/** HANDLERS **/
 	const paginationHandler = async (event: ChangeEvent<unknown>, value: number) => {
-		followInquiry.page = value;
-		setFollowInquiry({ ...followInquiry });
+		setFollowInquiry((prev) => ({
+			...prev,
+			page: value,
+		}));
 	};
 
 	if (device === 'mobile') {

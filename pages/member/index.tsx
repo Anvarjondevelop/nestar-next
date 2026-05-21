@@ -20,7 +20,7 @@ import {
 import MemberFollowings from '../../libs/components/member/MemberFollowings';
 import { userVar } from '../../apollo/store';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
-import { SUBSCRIBE, UNSUBSCRIBE } from '../../apollo/user/mutation';
+import { SUBSCRIBE, UNSUBSCRIBE, LIKE_TARGET_MEMBER } from '../../apollo/user/mutation';
 
 import { Messages } from '../../libs/config';
 
@@ -39,6 +39,7 @@ const MemberPage: NextPage = () => {
 	/** APOLLO REQUESTS **/
 	const [subscribe] = useMutation(SUBSCRIBE);
 	const [unsubscribe] = useMutation(UNSUBSCRIBE);
+	const [likeTargetMember] = useMutation(LIKE_TARGET_MEMBER);
 
 	/** LIFECYCLES **/
 	useEffect(() => {

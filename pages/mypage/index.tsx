@@ -15,7 +15,7 @@ import { userVar } from '../../apollo/store';
 import MyMenu from '../../libs/components/mypage/MyMenu';
 import WriteArticle from '../../libs/components/mypage/WriteArticle';
 import MemberFollowers from '../../libs/components/member/MemberFollowers';
-import { SUBSCRIBE, UNSUBSCRIBE } from '../../apollo/user/mutation';
+import { SUBSCRIBE, UNSUBSCRIBE, LIKE_TARGET_MEMBER } from '../../apollo/user/mutation';
 import {
 	sweetConfirmAlert,
 	sweetErrorHandling,
@@ -43,6 +43,7 @@ const MyPage: NextPage = () => {
 	/** APOLLO REQUESTS **/
 	const [subscribe] = useMutation(SUBSCRIBE);
 	const [unsubscribe] = useMutation(UNSUBSCRIBE);
+	const [likeTargetMember] = useMutation(LIKE_TARGET_MEMBER);
 
 	/** LIFECYCLES **/
 	useEffect(() => {
@@ -151,6 +152,3 @@ const MyPage: NextPage = () => {
 };
 
 export default withLayoutBasic(MyPage);
-function likeTargetMember(arg0: { variables: { input: string } }) {
-	throw new Error('Function not implemented.');
-}
