@@ -10,14 +10,23 @@ import RecentlyVisited from '../../libs/components/mypage/RecentlyVisited';
 import AddProperty from '../../libs/components/mypage/AddNewProperty';
 import MyProfile from '../../libs/components/mypage/MyProfile';
 import MyArticles from '../../libs/components/mypage/MyArticles';
-import { useReactiveVar } from '@apollo/client';
+import { useMutation, useReactiveVar } from '@apollo/client';
 import { userVar } from '../../apollo/store';
 import MyMenu from '../../libs/components/mypage/MyMenu';
 import WriteArticle from '../../libs/components/mypage/WriteArticle';
 import MemberFollowers from '../../libs/components/member/MemberFollowers';
-import { sweetErrorHandling } from '../../libs/sweetAlert';
+import { SUBSCRIBE, UNSUBSCRIBE } from '../../apollo/user/mutation';
+import {
+	sweetConfirmAlert,
+	sweetErrorHandling,
+	sweetMixinErrorAlert,
+	sweetMixinSuccessAlert,
+	sweetTopSmallSuccessAlert,
+} from '../../libs/sweetAlert';
+import { Message } from '../../libs/enums/common.enum';
 import MemberFollowings from '../../libs/components/member/MemberFollowings';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
+import { Messages } from '../../libs/config';
 
 export const getStaticProps = async ({ locale }: any) => ({
 	props: {
@@ -32,6 +41,8 @@ const MyPage: NextPage = () => {
 	const category: any = router.query?.category ?? 'myProfile';
 
 	/** APOLLO REQUESTS **/
+	const [subscribe] = useMutation(SUBSCRIBE);
+	const [unsubscribe] = useMutation(UNSUBSCRIBE);
 
 	/** LIFECYCLES **/
 	useEffect(() => {
@@ -41,6 +52,12 @@ const MyPage: NextPage = () => {
 	/** HANDLERS **/
 	const subscribeHandler = async (id: string, refetch: any, query: any) => {
 		try {
+			if (!id) return;
+			if (!user?._id) throw new Error(Message.NOT_AUTHENTICATED);
+
+			await subscribe({ variables: { input: id } });
+			await sweetMixinSuccessAlert('Subscribed successfully!', 1000);
+			if (refetch) await refetch({ input: query });
 		} catch (err: any) {
 			sweetErrorHandling(err).then();
 		}
@@ -48,8 +65,33 @@ const MyPage: NextPage = () => {
 
 	const unsubscribeHandler = async (id: string, refetch: any, query: any) => {
 		try {
+			if (!id) return;
+			if (!user?._id) throw new Error(Message.NOT_AUTHENTICATED);
+
+			if (await sweetConfirmAlert('Do you want to unsubscribe?')) {
+				await unsubscribe({ variables: { input: id } });
+				await sweetMixinSuccessAlert('Unsubscribed successfully!', 1000);
+				if (refetch) await refetch({ input: query });
+			}
 		} catch (err: any) {
 			sweetErrorHandling(err).then();
+		}
+	};
+	const likeMemberHandler = async (id: string, refetch: any, query: any) => {
+		try {
+			if (!id) return;
+			if (!user._id) throw new Error(Messages.error2);
+
+			await likeTargetMember({
+				variables: {
+					input: id,
+				},
+			});
+			await sweetTopSmallSuccessAlert('Success!', 800);
+			await refetch({ input: query });
+		} catch (err: any) {
+			console.log('ERROR, likeMemberHandler:', err.message);
+			sweetMixinErrorAlert(err.message).then();
 		}
 	};
 
@@ -86,6 +128,7 @@ const MyPage: NextPage = () => {
 										<MemberFollowers
 											subscribeHandler={subscribeHandler}
 											unsubscribeHandler={unsubscribeHandler}
+											likeMemberHandler={likeMemberHandler}
 											redirectToMemberPageHandler={redirectToMemberPageHandler}
 										/>
 									)}
@@ -93,6 +136,7 @@ const MyPage: NextPage = () => {
 										<MemberFollowings
 											subscribeHandler={subscribeHandler}
 											unsubscribeHandler={unsubscribeHandler}
+											likeMemberHandler={likeMemberHandler}
 											redirectToMemberPageHandler={redirectToMemberPageHandler}
 										/>
 									)}
@@ -107,3 +151,6 @@ const MyPage: NextPage = () => {
 };
 
 export default withLayoutBasic(MyPage);
+function likeTargetMember(arg0: { variables: { input: string } }) {
+	throw new Error('Function not implemented.');
+}
