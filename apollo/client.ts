@@ -7,6 +7,7 @@ import { onError } from '@apollo/client/link/error';
 import { getJwtToken } from '../libs/auth';
 import { TokenRefreshLink } from 'apollo-link-token-refresh';
 import { sweetErrorAlert } from '../libs/sweetAlert';
+import { socketVar } from './store';
 let apolloClient: ApolloClient<NormalizedCacheObject>;
 const GRAPHQL_URI = process.env.REACT_APP_API_GRAPHQL_URL || 'http://localhost:3007/graphql';
 const GRAPHQL_WS_URI = process.env.REACT_APP_API_WS || 'ws://127.0.0.1:3007';
@@ -35,7 +36,9 @@ class LoggingWebSocket {
 	private socket: WebSocket;
 
 	constructor(url: string) {
-		this.socket = new WebSocket(url);
+		this.socket = new WebSocket(`${url}?token=${getJwtToken()}`);
+		socketVar(this.socket); // Store the WebSocket instance in the reactive variable
+
 		this.socket.onopen = () => {
 			console.log('WebSocket connection opened');
 		};
