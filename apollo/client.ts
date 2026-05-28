@@ -30,6 +30,32 @@ const tokenRefreshLink = new TokenRefreshLink({
 	},
 });
 
+// Custom WebSocket client
+class LoggingWebSocket {
+	private socket: WebSocket;
+
+	constructor(url: string) {
+		this.socket = new WebSocket(url);
+		this.socket.onopen = () => {
+			console.log('WebSocket connection opened');
+		};
+		this.socket.onmessage = (msg) => {
+			console.log('WebSocket message received: ', msg.data);
+		};
+
+		this.socket.onerror = (err) => {
+			console.log('WebSocket errror received: ', err);
+		};
+	}
+	send(data: string | ArrayBuffer | SharedArrayBuffer | Blob | ArrayBufferView) {
+		console.log('WebSocket sending data: ', data);
+		this.socket.send(data);
+	}
+	close() {
+		this.socket.close();
+	}
+}
+
 function createIsomorphicLink() {
 	const authLink = new ApolloLink((operation, forward) => {
 		operation.setContext(({ headers = {} }) => ({
@@ -71,6 +97,8 @@ function createIsomorphicLink() {
 					return { headers: getHeaders() };
 				},
 			},
+
+			webSocketImpl: LoggingWebSocket, // Custom WebSocket client
 		});
 
 		const splitLink = split(
